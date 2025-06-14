@@ -1,4 +1,3 @@
-
 // Estimate factors
 const CO2_PER_PROMPT = 0.0002;   // kg CO₂e per prompt (example: 0.2g)
 const WATER_PER_PROMPT = 0.5;    // liters per prompt (as water for cooling)
@@ -17,16 +16,42 @@ function updateDisplay() {
 }
 
 let intervalId;
+let hasAccount = false;
+
+function showActionButton() {
+  const btn = document.getElementById('offsetBtn');
+  if (!btn) return;
+
+  if (hasAccount) {
+    btn.innerHTML = '<span class="btn-icon">Go to Dashboard</span>';
+    btn.onclick = () => {
+      window.open("https://app.offset-ai.com", "_blank");
+    };
+  } else {
+    btn.innerHTML = '<span class="btn-icon">💚</span>Offset My Impact';
+    btn.onclick = () => {
+      window.open("https://www.pachama.com/marketplace", "_blank");
+    };
+  }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Determine login state (for demo: chrome.storage.local.get 'hasAccount')
+  chrome.storage.local.get(['hasAccount'], (result) => {
+    hasAccount = !!result.hasAccount;
+    showActionButton();
+  });
+
   updateDisplay();
-
-  // Refresh every 2 seconds while popup open, to catch changes
   intervalId = setInterval(updateDisplay, 2000);
+});
 
-  document.getElementById('offsetBtn').onclick = () => {
-    window.open("https://www.pachama.com/marketplace", "_blank");
-  };
+// Update the action button if login state changes while popup is open
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && 'hasAccount' in changes) {
+    hasAccount = !!changes.hasAccount.newValue;
+    showActionButton();
+  }
 });
 
 // Clear interval when popup closes (defensive: Chrome often destroys popup)

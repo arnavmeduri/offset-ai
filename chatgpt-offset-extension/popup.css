@@ -1,4 +1,3 @@
-
 body {
   min-width: 280px;
   padding: 0;
@@ -88,10 +87,20 @@ body {
   color: #64748b;
   text-decoration: none;
   transition: color 0.18s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .footer-link a:hover {
   color: #22c55e;
   text-decoration: underline;
+}
+.footer-link svg {
+  stroke: #64748b;
+  transition: stroke 0.18s;
+}
+.footer-link a:hover svg {
+  stroke: #22c55e;
 }
 
 /* Responsive for very small popup width */
