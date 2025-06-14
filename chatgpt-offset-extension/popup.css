@@ -1,0 +1,41 @@
+
+body {
+  min-width: 260px;
+  padding: 0;
+  font-family: system-ui, sans-serif;
+  background: #f8fafc;
+}
+
+.container {
+  padding: 16px;
+  text-align: center;
+}
+
+h2 {
+  margin: 0 0 12px 0;
+  color: #22c55e;
+  font-size: 1.2rem;
+}
+
+#impactDisplay {
+  background: #fff;
+  border-radius: 6px;
+  padding: 10px 0;
+  color: #334155;
+  margin-bottom: 16px;
+  font-size: 1rem;
+}
+
+#offsetBtn {
+  background: #22c55e;
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+#offsetBtn:hover {
+  background: #16a34a;
+}
