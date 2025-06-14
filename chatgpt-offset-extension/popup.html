@@ -4,12 +4,21 @@
   <head>
     <title>ChatGPT Offset</title>
     <link rel="stylesheet" href="popup.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" />
   </head>
   <body>
-    <div class="container">
-      <h2>🌿 ChatGPT Footprint</h2>
-      <div id="impactDisplay">Loading...</div>
-      <button id="offsetBtn">Offset My Impact</button>
+    <div class="container shadow">
+      <h2 class="headline">🌿 ChatGPT Footprint</h2>
+      <div id="impactDisplay" class="impact-list">
+        Loading...
+      </div>
+      <button id="offsetBtn" class="offset-btn">
+        <span class="btn-icon">💚</span>
+        Offset My Impact
+      </button>
+      <footer class="footer-link">
+        <a href="https://github.com/goodideagpt/chatgpt-offset" target="_blank" aria-label="Open GitHub repository">About this extension</a>
+      </footer>
     </div>
     <script src="popup.js"></script>
   </body>
