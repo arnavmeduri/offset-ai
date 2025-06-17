@@ -1,10 +1,18 @@
-
 {
   "manifest_version": 3,
   "name": "ChatGPT Offset Tracker",
   "description": "Track and offset the emissions from your ChatGPT use.",
-  "version": "1.0",
-  "permissions": ["storage", "activeTab", "scripting"],
+  "version": "1.1",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://chat.openai.com/*",
+    "https://chatgpt.com/*"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon-128.png"
@@ -14,11 +22,21 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://chat.openai.com/*"],
-      "js": ["content.js"]
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_end"
     }
   ],
   "icons": {
     "128": "icon-128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["*.png", "*.jpg", "*.svg"],
+      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"]
+    }
+  ]
 }

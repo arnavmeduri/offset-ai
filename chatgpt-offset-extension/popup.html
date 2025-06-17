@@ -1,26 +1,48 @@
-
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8">
     <title>ChatGPT Offset</title>
     <link rel="stylesheet" href="popup.css" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   </head>
   <body>
-    <div class="container shadow">
-      <h2 class="headline">🌿 ChatGPT Footprint</h2>
+    <div class="container">
+      <h2 class="headline">🌿 OffsetAI</h2>
+      
       <div id="impactDisplay" class="impact-list">
-        Loading...
+        <div class="loading">
+          <span class="loading-spinner">⏳</span>
+          Loading your impact...
+        </div>
       </div>
-      <button id="offsetBtn" class="offset-btn">
-        <span class="btn-icon">💚</span>
-        Offset My Impact
-      </button>
+      
+      <div class="button-group">
+        <button id="offsetBtn" class="offset-btn" disabled>
+          <span class="btn-icon">💚</span>
+          Offset My Impact
+        </button>
+        
+        <button id="refreshBtn" class="offset-btn refresh-btn">
+          <span class="btn-icon">🔄</span>
+          Refresh Count
+        </button>
+        
+        <button id="resetBtn" class="offset-btn reset-btn">
+          <span class="btn-icon">🗑️</span>
+          Reset Count
+        </button>
+      </div>
+      
       <footer class="footer-link">
-        <a href="https://github.com/goodideagpt/chatgpt-offset" target="_blank" aria-label="Open GitHub repository">About this extension</a>
+        <a href="https://github.com/goodideagpt/chatgpt-offset" target="_blank" aria-label="Open GitHub repository">
+          About this extension
+        </a>
       </footer>
     </div>
+    
     <script src="popup.js"></script>
   </body>
 </html>
