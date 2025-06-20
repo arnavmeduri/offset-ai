@@ -15,7 +15,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_icon": "icon-128.png"
+    "default_icon": "assets/offset_ai_logo.png"
   },
   "background": {
     "service_worker": "background.js"
@@ -31,12 +31,21 @@
     }
   ],
   "icons": {
-    "128": "icon-128.png"
+    "128": "assets/offset_ai_logo_circle.png"
   },
   "web_accessible_resources": [
     {
-      "resources": ["*.png", "*.jpg", "*.svg"],
-      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"]
+      "resources": [
+        "assets/*.png",
+        "assets/*.jpg",
+        "assets/*.svg",
+        "fonts/*"
+      ],
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*",
+        "<all_urls>"
+      ]
     }
   ]
 }

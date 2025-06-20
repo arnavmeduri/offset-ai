@@ -1,6 +1,15 @@
 // Enhanced ChatGPT Offset Tracker Content Script
 let lastPromptCount = 0;
 let isInitialized = false;
+let hasUserPrompted = false; // Tab-local flag
+
+function isVisible(el) {
+  // Checks if the element is visible in the DOM
+  if (!el) return false;
+  if (el.offsetParent !== null) return true;
+  const style = window.getComputedStyle(el);
+  return style && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+}
 
 function countPrompts() {
   try {
@@ -11,6 +20,22 @@ function countPrompts() {
     const messageContainers = document.querySelectorAll('[data-message-author-role="user"]');
     if (messageContainers.length > 0) {
       userPrompts = Array.from(messageContainers);
+      userPrompts = userPrompts.filter(el => {
+        const text = el.textContent?.trim();
+        const visible = isVisible(el);
+        const classList = el.className || "";
+        // Exclude invisible, empty, or placeholder
+        if (!text || text.length === 0 || text === '...' || !visible) return false;
+        // Exclude menu/system UI by class
+        if (classList.includes('menu-item') || classList.includes('text-token-text-tertiary')) return false;
+        // Exclude by known system phrases
+        const systemPhrases = [
+          'Search chats', 'Upgrade plan', 'More access to the best models',
+          'Create image', 'Get advice', 'Summarize', 'Surprise me', 'window.__oai_logHTML'
+        ];
+        if (systemPhrases.some(phrase => text.includes(phrase))) return false;
+        return true;
+      });
     }
     
     // Strategy 2: Look for user messages by DOM structure
@@ -24,6 +49,22 @@ function countPrompts() {
         const hasUserText = el.textContent && el.textContent.trim().length > 10;
         return (hasUserAvatar || isRightAligned) && hasUserText;
       });
+      userPrompts = userPrompts.filter(el => {
+        const text = el.textContent?.trim();
+        const visible = isVisible(el);
+        const classList = el.className || "";
+        // Exclude invisible, empty, or placeholder
+        if (!text || text.length === 0 || text === '...' || !visible) return false;
+        // Exclude menu/system UI by class
+        if (classList.includes('menu-item') || classList.includes('text-token-text-tertiary')) return false;
+        // Exclude by known system phrases
+        const systemPhrases = [
+          'Search chats', 'Upgrade plan', 'More access to the best models',
+          'Create image', 'Get advice', 'Summarize', 'Surprise me', 'window.__oai_logHTML'
+        ];
+        if (systemPhrases.some(phrase => text.includes(phrase))) return false;
+        return true;
+      });
     }
     
     // Strategy 3: Look for conversation turn pattern
@@ -35,6 +76,22 @@ function countPrompts() {
         const notAssistantResponse = !el.textContent.toLowerCase().includes('chatgpt') && 
                                    !el.querySelector('[class*="assistant"]');
         return hasText && notAssistantResponse && index % 2 === 0; // Assume user messages are even-indexed
+      });
+      userPrompts = userPrompts.filter(el => {
+        const text = el.textContent?.trim();
+        const visible = isVisible(el);
+        const classList = el.className || "";
+        // Exclude invisible, empty, or placeholder
+        if (!text || text.length === 0 || text === '...' || !visible) return false;
+        // Exclude menu/system UI by class
+        if (classList.includes('menu-item') || classList.includes('text-token-text-tertiary')) return false;
+        // Exclude by known system phrases
+        const systemPhrases = [
+          'Search chats', 'Upgrade plan', 'More access to the best models',
+          'Create image', 'Get advice', 'Summarize', 'Surprise me', 'window.__oai_logHTML'
+        ];
+        if (systemPhrases.some(phrase => text.includes(phrase))) return false;
+        return true;
       });
     }
     
@@ -48,13 +105,40 @@ function countPrompts() {
       });
       // Take every other element assuming user/assistant alternation
       userPrompts = userPrompts.filter((_, index) => index % 2 === 0);
+      userPrompts = userPrompts.filter(el => {
+        const text = el.textContent?.trim();
+        const visible = isVisible(el);
+        const classList = el.className || "";
+        // Exclude invisible, empty, or placeholder
+        if (!text || text.length === 0 || text === '...' || !visible) return false;
+        // Exclude menu/system UI by class
+        if (classList.includes('menu-item') || classList.includes('text-token-text-tertiary')) return false;
+        // Exclude by known system phrases
+        const systemPhrases = [
+          'Search chats', 'Upgrade plan', 'More access to the best models',
+          'Create image', 'Get advice', 'Summarize', 'Surprise me', 'window.__oai_logHTML'
+        ];
+        if (systemPhrases.some(phrase => text.includes(phrase))) return false;
+        return true;
+      });
     }
     
+    // Debug: Log all counted prompts
+    userPrompts.forEach((el, i) => console.log(`Prompt ${i}:`, el.textContent, el));
     console.log("ChatGPT Offset Tracker: Found user prompts:", userPrompts.length);
+    
+    if (!hasUserPrompted) {
+      if (userPrompts.length > 0) {
+        hasUserPrompted = true;
+      } else {
+        return 0; // Return 0 until the first prompt
+      }
+    }
+    
     return Math.max(0, userPrompts.length);
   } catch (error) {
     console.error("ChatGPT Offset Tracker: Error counting prompts:", error);
-    return lastPromptCount; // Return last known count on error
+    return lastPromptCount;
   }
 }
 
@@ -62,9 +146,14 @@ function updatePromptCount() {
   const count = countPrompts();
   if (count !== lastPromptCount) {
     lastPromptCount = count;
-    chrome.storage.local.set({ promptCount: count }, () => {
-      console.log("ChatGPT Offset Tracker: Updated prompt count to:", count);
-    });
+    // Notify background to store the count for this tab
+    try {
+      chrome.runtime.sendMessage({ action: 'storeTabCount', count: count });
+    } catch (e) {
+      // This error is expected if the extension is reloaded.
+      // We can safely ignore it, as the new content script will take over.
+      console.warn("Could not contact background script. Extension may have been reloaded.");
+    }
   }
 }
 
@@ -118,34 +207,29 @@ function initializeObserver() {
 
 // Wait for page to load and initialize
 function initialize() {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initialize);
-    return;
-  }
-  
-  // Initial count after a short delay
+  // Always run these, regardless of document.readyState
   setTimeout(() => {
     updatePromptCount();
     initializeObserver();
   }, 2000);
-  
-  // Also check when user interacts with the page
   document.addEventListener('click', () => {
     setTimeout(updatePromptCount, 1000);
   });
-  
-  // Periodic check every 10 seconds
   setInterval(updatePromptCount, 10000);
 }
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'ping') {
+    sendResponse({ pong: true });
+    return true;
+  }
   if (request.action === 'resetCount') {
     lastPromptCount = 0;
-    chrome.storage.local.set({ promptCount: 0 }, () => {
-      console.log("ChatGPT Offset Tracker: Count reset");
-      sendResponse({ success: true });
-    });
+    hasUserPrompted = false;
+    updatePromptCount(); // This will now send a count of 0 to the background
+    console.log("ChatGPT Offset Tracker: Count reset for this tab");
+    sendResponse({ success: true });
     return true;
   } else if (request.action === 'refreshCount') {
     updatePromptCount();
