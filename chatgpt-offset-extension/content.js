@@ -152,7 +152,7 @@ function updatePromptCount() {
     } catch (e) {
       // This error is expected if the extension is reloaded.
       // We can safely ignore it, as the new content script will take over.
-      console.warn("Could not contact background script. Extension may have been reloaded.");
+      // console.info("Could not contact background script. Extension may have been reloaded.");
     }
   }
 }

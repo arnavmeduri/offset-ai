@@ -51,17 +51,8 @@ function updateDisplay() {
       
       // Update button text based on impact
       const offsetBtn = document.getElementById('offsetBtn');
-      if (promptCount > 0) {
-        offsetBtn.innerHTML = `
-          Offset ${formatNumber(emissions, 3)} kg CO₂e
-        `;
-        offsetBtn.disabled = false;
-      } else {
-        offsetBtn.innerHTML = `
-          Offset My Impact
-        `;
-        offsetBtn.disabled = true;
-      }
+      offsetBtn.innerHTML = `Offset My Impact`;
+      offsetBtn.disabled = promptCount === 0;
       
       isUpdating = false;
     });
@@ -203,11 +194,10 @@ document.addEventListener('DOMContentLoaded', () => {
           // Initial display update
           updateDisplay();
           // Set up event listeners
-          document.getElementById('offsetBtn').addEventListener('click', openOffsetPage);
-          document.getElementById('resetBtn').addEventListener('click', resetCount);
-          document.getElementById('refreshBtn').addEventListener('click', refreshCount);
-          // Auto-refresh every 3 seconds while popup is open
-          intervalId = setInterval(updateDisplay, 3000);
+          const offsetBtn = document.getElementById('offsetBtn');
+          if (offsetBtn) {
+            offsetBtn.addEventListener('click', openOffsetPage);
+          }
           checkContentScriptRunning((isRunning) => {
             const msgDiv = document.getElementById('noContentScriptMsg');
             if (msgDiv) msgDiv.style.display = isRunning ? 'none' : 'block';
@@ -237,11 +227,10 @@ document.addEventListener('DOMContentLoaded', () => {
               // Initial display update
               updateDisplay();
               // Set up event listeners
-              document.getElementById('offsetBtn').addEventListener('click', openOffsetPage);
-              document.getElementById('resetBtn').addEventListener('click', resetCount);
-              document.getElementById('refreshBtn').addEventListener('click', refreshCount);
-              // Auto-refresh every 3 seconds while popup is open
-              intervalId = setInterval(updateDisplay, 3000);
+              const offsetBtn = document.getElementById('offsetBtn');
+              if (offsetBtn) {
+                offsetBtn.addEventListener('click', openOffsetPage);
+              }
               checkContentScriptRunning((isRunning) => {
                 const msgDiv = document.getElementById('noContentScriptMsg');
                 if (msgDiv) msgDiv.style.display = isRunning ? 'none' : 'block';
