@@ -184,6 +184,25 @@ function checkContentScriptRunning(callback) {
   });
 }
 
+async function sendSessionToBubble(sessionData) {
+  try {
+    const response = await fetch('https://offset-ai.bubbleapps.io/version-test/api/1.1/wf/create_session_log', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(sessionData),
+    });
+    if (!response.ok) {
+      showToast('Failed to log session to Bubble');
+    } else {
+      showToast('Session log sent!');
+    }
+  } catch (err) {
+    showToast('Error sending session to Bubble');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.local.get(['onboardingComplete'], ({ onboardingComplete }) => {
     if (onboardingComplete) {
@@ -256,6 +275,45 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeBtn = document.getElementById('closeBtn');
   if (closeBtn) {
     closeBtn.addEventListener('click', () => window.close());
+  }
+  const forceLogBtn = document.getElementById('forceLogBtn');
+  if (forceLogBtn) {
+    forceLogBtn.addEventListener('click', () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (!tabs.length || !tabs[0].id) return;
+        const tabId = tabs[0].id;
+        const sessionIdKey = `session_id_${tabId}`;
+        const startTimeKey = `start_time_${tabId}`;
+        const promptKey = `promptCount_${tabId}`;
+        const emissionsKey = `estimated_emissions_${tabId}`;
+        const waterKey = `estimated_water_${tabId}`;
+        chrome.storage.local.get([sessionIdKey, startTimeKey, promptKey, emissionsKey, waterKey, 'extension_user_id'], (result) => {
+          const session_id = result[sessionIdKey];
+          const start_time = result[startTimeKey];
+          const prompt_count = result[promptKey] || 0;
+          const estimated_emissions = result[emissionsKey] || 0;
+          const estimated_water = result[waterKey] || 0;
+          const extension_user_id = result.extension_user_id;
+          const end_time = new Date().toISOString();
+          const browser_version = navigator.userAgent.match(/Chrome\/[\d.]+/)?.[0] || navigator.userAgent;
+          if (session_id && extension_user_id && start_time && prompt_count > 0) {
+            const sessionData = {
+              session_id,
+              extension_user_id,
+              start_time,
+              end_time,
+              prompt_count,
+              estimated_emissions,
+              estimated_water,
+              browser_version
+            };
+            sendSessionToBubble(sessionData);
+          } else {
+            showToast('No session data to log');
+          }
+        });
+      });
+    });
   }
 });
 
