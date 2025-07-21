@@ -215,7 +215,36 @@ document.addEventListener('DOMContentLoaded', () => {
           // Set up event listeners
           const offsetBtn = document.getElementById('offsetBtn');
           if (offsetBtn) {
-            offsetBtn.addEventListener('click', openOffsetPage);
+            offsetBtn.addEventListener('click', () => {
+              chrome.storage.local.get(['extension_user_id'], async (result) => {
+                const extension_user_id = result.extension_user_id;
+                if (!extension_user_id) {
+                  console.error("No extension_user_id found in storage.");
+                  showToast("Unable to find your extension ID.");
+                  return;
+                }
+                try {
+                  // Send POST request to Bubble backend
+                  const response = await fetch('https://offset-ai.bubbleapps.io/version-test/api/1.1/wf/initiate_linking_process', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ extension_user_id }),
+                  });
+                  if (!response.ok) {
+                    console.error('Failed to initiate linking:', response.statusText);
+                    showToast("Failed to link account");
+                    return;
+                  }
+                  // On success, open signup page
+                  chrome.tabs.create({ url: 'https://dashboard.offsetai.app/version-test/sign-up?m=Signup' });
+                } catch (err) {
+                  console.error('Error sending extension_user_id to backend:', err);
+                  showToast("Failed to link account");
+                }
+              });
+            });
           }
           checkContentScriptRunning((isRunning) => {
             const msgDiv = document.getElementById('noContentScriptMsg');
