@@ -22,13 +22,13 @@
 body {
   min-width: 320px;
   width: 320px;
-  min-height: 420px;
-  max-height: 600px;
+  height: auto;
   padding: 0;
   margin: 0;
   background: #fff;
   font-family: 'Product Sans', system-ui, 'Segoe UI', 'Apple Color Emoji', sans-serif;
   font-size: 14px;
+  overflow-y: auto;
 }
 
 .container {
@@ -40,6 +40,14 @@ body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+}
+
+.container.compact {
+  margin: 12px;
+  padding: 12px;
+  min-height: unset;
+  height: auto;
+  gap: 12px;
 }
 
 .headline {
@@ -102,7 +110,7 @@ body {
   to { transform: rotate(360deg); }
 }
 
-.offset-btn, #offsetBtn, .refresh-btn, .reset-btn {
+.offset-btn, #offsetBtn, .refresh-btn, .reset-btn, .connect-btn, .get-started-btn {
   background: #182827;
   color: #BEEA8C;
   border: none;
@@ -122,20 +130,20 @@ body {
   min-height: 44px;
 }
 
-.offset-btn:hover:not(:disabled), #offsetBtn:hover:not(:disabled), .refresh-btn:hover:not(:disabled), .reset-btn:hover:not(:disabled) {
+.offset-btn:hover:not(:disabled), #offsetBtn:hover:not(:disabled), .refresh-btn:hover:not(:disabled), .reset-btn:hover:not(:disabled), .connect-btn:hover:not(:disabled), .get-started-btn:hover:not(:disabled) {
   background: #182827;
   filter: brightness(0.97);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(24, 40, 39, 0.15);
 }
 
-.offset-btn:active:not(:disabled), #offsetBtn:active:not(:disabled), .refresh-btn:active:not(:disabled), .reset-btn:active:not(:disabled) {
+.offset-btn:active:not(:disabled), #offsetBtn:active:not(:disabled), .refresh-btn:active:not(:disabled), .reset-btn:active:not(:disabled), .connect-btn:active:not(:disabled), .get-started-btn:active:not(:disabled) {
   background: #182827;
   filter: brightness(0.94);
   transform: translateY(-1px);
 }
 
-.offset-btn:disabled, #offsetBtn:disabled, .refresh-btn:disabled, .reset-btn:disabled {
+.offset-btn:disabled, #offsetBtn:disabled, .refresh-btn:disabled, .reset-btn:disabled, .connect-btn:disabled, .get-started-btn:disabled {
   background: #cbd5e1;
   color: #94a3b8;
   cursor: not-allowed;
@@ -182,7 +190,22 @@ body {
   text-decoration: underline;
 }
 
-/* Toast notifications */
+.success-message {
+  display: none;
+  margin: 12px 0 18px 0;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: rgba(34, 197, 94, 0.08);
+  color: #16a34a;
+  font-size: 0.95rem;
+  text-align: center;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.success-message.show {
+  display: block;
+}
+
 .toast {
   position: fixed;
   bottom: 20px;
@@ -210,17 +233,23 @@ body {
     min-width: 280px;
     width: 280px;
   }
-  
+
   .container {
     margin: 12px 8px;
     padding: 16px 12px;
   }
-  
+
+  .container.compact {
+    margin: 8px;
+    padding: 10px;
+    height: auto;
+  }
+
   .impact-list {
     padding: 14px 12px;
     gap: 12px;
   }
-  
+
   .headline {
     font-size: 1.1rem;
   }

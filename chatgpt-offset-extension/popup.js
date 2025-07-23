@@ -49,11 +49,6 @@ function updateDisplay() {
         </span>
       `;
       
-      // Update button text based on impact
-      const offsetBtn = document.getElementById('offsetBtn');
-      offsetBtn.innerHTML = `Offset My Impact`;
-      offsetBtn.disabled = promptCount === 0;
-      
       isUpdating = false;
     });
   });
@@ -109,25 +104,6 @@ function showToast(message) {
   }, 2000);
 }
 
-function openOffsetPage() {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (!tabs.length || !tabs[0].id) return;
-    const tabId = tabs[0].id;
-    const storageKey = `promptCount_${tabId}`;
-    chrome.storage.local.get([storageKey], (result) => {
-      const promptCount = result[storageKey] || 0;
-      if (promptCount > 0) {
-        const emissions = promptCount * CO2_PER_PROMPT;
-        // You can customize this URL to include the emissions data
-        const offsetUrl = `https://www.pachama.com/marketplace?emissions=${emissions.toFixed(4)}`;
-        window.open(offsetUrl, "_blank");
-      } else {
-        window.open("https://www.pachama.com/marketplace", "_blank");
-      }
-    });
-  });
-}
-
 function showWelcomePage() {
   document.getElementById('welcomePage').style.display = 'block';
   document.getElementById('mainPage').style.display = 'none';
@@ -152,15 +128,27 @@ function updateWelcomeSessionMsg() {
     if (!msgDiv) return;
     if (!isChatgptOpen) {
       msgDiv.style.display = 'block';
-      const openLink = document.getElementById('openChatgptLink');
-      if (openLink) {
-        openLink.onclick = (e) => {
-          e.preventDefault();
-          chrome.tabs.create({ url: 'https://chat.openai.com/' });
-        };
-      }
     } else {
       msgDiv.style.display = 'none';
+    }
+  });
+}
+
+function updateGetStartedButton() {
+  const getStartedBtn = document.getElementById('getStartedBtn');
+  if (!getStartedBtn) return;
+  
+  checkChatgptTab((isChatgptOpen) => {
+    if (isChatgptOpen) {
+      getStartedBtn.disabled = false;
+      getStartedBtn.style.background = '#182827';
+      getStartedBtn.style.color = '#BEEA8C';
+      getStartedBtn.style.cursor = 'pointer';
+    } else {
+      getStartedBtn.disabled = true;
+      getStartedBtn.style.background = '#cbd5e1';
+      getStartedBtn.style.color = '#94a3b8';
+      getStartedBtn.style.cursor = 'not-allowed';
     }
   });
 }
@@ -203,108 +191,108 @@ async function sendSessionToBubble(sessionData) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  chrome.storage.local.get(['onboardingComplete'], ({ onboardingComplete }) => {
-    if (onboardingComplete) {
-      checkChatgptTab((isChatgptOpen) => {
-        if (isChatgptOpen) {
-          document.getElementById('welcomePage').style.display = 'none';
-          document.getElementById('mainPage').style.display = 'block';
-          // Initial display update
-          updateDisplay();
-          // Set up event listeners
-          const offsetBtn = document.getElementById('offsetBtn');
-          if (offsetBtn) {
-            offsetBtn.addEventListener('click', () => {
-              chrome.storage.local.get(['extension_user_id'], async (result) => {
-                const extension_user_id = result.extension_user_id;
-                if (!extension_user_id) {
-                  console.error("No extension_user_id found in storage.");
-                  showToast("Unable to find your extension ID.");
-                  return;
-                }
-                try {
-                  // Send POST request to Bubble backend
-                  const response = await fetch('https://offset-ai.bubbleapps.io/version-test/api/1.1/wf/initiate_linking_process', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ extension_user_id }),
-                  });
-                  if (!response.ok) {
-                    console.error('Failed to initiate linking:', response.statusText);
-                    showToast("Failed to link account");
-                    return;
-                  }
-                  // On success, open signup page
-                  chrome.tabs.create({ url: 'https://dashboard.offsetai.app/version-test/sign-up?m=Signup' });
-                } catch (err) {
-                  console.error('Error sending extension_user_id to backend:', err);
-                  showToast("Failed to link account");
-                }
-              });
-            });
-          }
-          checkContentScriptRunning((isRunning) => {
-            const msgDiv = document.getElementById('noContentScriptMsg');
-            if (msgDiv) msgDiv.style.display = isRunning ? 'none' : 'block';
-          });
-        } else {
-          document.getElementById('mainPage').style.display = 'none';
-          document.getElementById('welcomePage').style.display = 'block';
-          const msgDiv = document.getElementById('noSessionMsg');
-          if (msgDiv) msgDiv.style.display = 'block';
-          const openLink = document.getElementById('openChatgptLink');
-          if (openLink) {
-            openLink.onclick = (e) => {
-              e.preventDefault();
-              chrome.tabs.create({ url: 'https://chat.openai.com/' });
-            };
-          }
-        }
+function showAccountConnectedMessage() {
+  const accountConnectedMsg = document.getElementById('accountConnectedMsg');
+  if (accountConnectedMsg) {
+    accountConnectedMsg.style.display = 'flex';
+    // Hide after 3 seconds
+    setTimeout(() => {
+      accountConnectedMsg.style.display = 'none';
+    }, 3000);
+  }
+}
+
+async function handleConnectAccount() {
+  chrome.storage.local.get(['extension_user_id'], async (result) => {
+    const extension_user_id = result.extension_user_id;
+    if (!extension_user_id) {
+      console.error("No extension_user_id found in storage.");
+      showToast("Unable to find your extension ID.");
+      return;
+    }
+    try {
+      // Send POST request to Bubble backend
+      const response = await fetch('https://offset-ai.bubbleapps.io/version-test/api/1.1/wf/initiate_linking_process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ extension_user_id }),
       });
-    } else {
-      showWelcomePage();
-      document.getElementById('getStartedBtn').addEventListener('click', () => {
-        chrome.storage.local.set({ onboardingComplete: true }, () => {
-          checkChatgptTab((isChatgptOpen) => {
-            if (isChatgptOpen) {
-              document.getElementById('welcomePage').style.display = 'none';
-              document.getElementById('mainPage').style.display = 'block';
-              // Initial display update
-              updateDisplay();
-              // Set up event listeners
-              const offsetBtn = document.getElementById('offsetBtn');
-              if (offsetBtn) {
-                offsetBtn.addEventListener('click', openOffsetPage);
-              }
-              checkContentScriptRunning((isRunning) => {
-                const msgDiv = document.getElementById('noContentScriptMsg');
-                if (msgDiv) msgDiv.style.display = isRunning ? 'none' : 'block';
-              });
-            } else {
-              document.getElementById('mainPage').style.display = 'none';
-              document.getElementById('welcomePage').style.display = 'block';
-              const msgDiv = document.getElementById('noSessionMsg');
-              if (msgDiv) msgDiv.style.display = 'block';
-              const openLink = document.getElementById('openChatgptLink');
-              if (openLink) {
-                openLink.onclick = (e) => {
-                  e.preventDefault();
-                  chrome.tabs.create({ url: 'https://chat.openai.com/' });
-                };
-              }
-            }
-          });
-        });
-      });
+      if (!response.ok) {
+        console.error('Failed to initiate linking:', response.statusText);
+        showToast("Failed to link account");
+        return;
+      }
+      // Show confirmation message
+      showAccountConnectedMessage();
+      // On success, open signup page
+      chrome.tabs.create({ url: 'https://dashboard.offsetai.app/version-test/sign-up?m=Signup' });
+    } catch (err) {
+      console.error('Error sending extension_user_id to backend:', err);
+      showToast("Failed to link account");
     }
   });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  chrome.storage.local.get(['onboardingComplete', 'trackingStarted'], ({ onboardingComplete, trackingStarted }) => {
+    if (onboardingComplete && trackingStarted) {
+      // User has completed onboarding and started tracking, show tracking page
+      showMainPage();
+      updateDisplay();
+      
+      checkContentScriptRunning((isRunning) => {
+        const msgDiv = document.getElementById('noContentScriptMsg');
+        if (msgDiv) msgDiv.style.display = isRunning ? 'none' : 'block';
+      });
+    } else {
+      // Show welcome page
+      showWelcomePage();
+      updateWelcomeSessionMsg();
+      updateGetStartedButton();
+      
+      // Update welcome page elements periodically
+      setInterval(() => {
+        updateWelcomeSessionMsg();
+        updateGetStartedButton();
+      }, 1000);
+    }
+  });
+
+  // Close button handler
   const closeBtn = document.getElementById('closeBtn');
   if (closeBtn) {
     closeBtn.addEventListener('click', () => window.close());
   }
+
+  // Connect Account button handler
+  const connectAccountBtn = document.getElementById('connectAccountBtn');
+  if (connectAccountBtn) {
+    connectAccountBtn.addEventListener('click', handleConnectAccount);
+  }
+
+  // Get Started button handler
+  const getStartedBtn = document.getElementById('getStartedBtn');
+  if (getStartedBtn) {
+    getStartedBtn.addEventListener('click', () => {
+      checkChatgptTab((isChatgptOpen) => {
+        if (isChatgptOpen) {
+          chrome.storage.local.set({ onboardingComplete: true, trackingStarted: true }, () => {
+            showMainPage();
+            updateDisplay();
+            
+            checkContentScriptRunning((isRunning) => {
+              const msgDiv = document.getElementById('noContentScriptMsg');
+              if (msgDiv) msgDiv.style.display = isRunning ? 'none' : 'block';
+            });
+          });
+        }
+      });
+    });
+  }
+
+  // Force Log button handler
   const forceLogBtn = document.getElementById('forceLogBtn');
   if (forceLogBtn) {
     forceLogBtn.addEventListener('click', () => {
@@ -316,6 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const promptKey = `promptCount_${tabId}`;
         const emissionsKey = `estimated_emissions_${tabId}`;
         const waterKey = `estimated_water_${tabId}`;
+        
         chrome.storage.local.get([sessionIdKey, startTimeKey, promptKey, emissionsKey, waterKey, 'extension_user_id'], (result) => {
           const session_id = result[sessionIdKey];
           const start_time = result[startTimeKey];
@@ -325,6 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const extension_user_id = result.extension_user_id;
           const end_time = new Date().toISOString();
           const browser_version = navigator.userAgent.match(/Chrome\/[\d.]+/)?.[0] || navigator.userAgent;
+          
           if (session_id && extension_user_id && start_time && prompt_count > 0) {
             const sessionData = {
               session_id,

@@ -10,6 +10,7 @@
   </head>
   <body>
     <button id="closeBtn" style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer; z-index: 100;">&times;</button>
+    
     <div id="welcomePage" style="display: none; min-height: 420px; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
       <div style="width: 100%; max-width: 340px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; background: #fff; box-sizing: border-box; padding: 20px 16px;">
         <div style="margin-bottom: 18px; margin-top: 8px;">
@@ -17,13 +18,24 @@
         </div>
         <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; color: #1e293b; text-align: center;">Welcome to OffsetAI!</h2>
         <p style="font-size: 0.95rem; color: #334155; margin-bottom: 18px; text-align: center; max-width: 280px;">Start tracking and offsetting your ChatGPT usage automatically. Make every AI conversation carbon neutral.</p>
-        <button id="getStartedBtn" style="background: #182827; color: #BEEA8C; border: none; border-radius: 10px; font-family: inherit; font-size: 0.98rem; font-weight: 600; padding: 10px 0; width: 100%; max-width: 240px; margin-bottom: 18px; cursor: pointer;">Get Started</button>
+        
+        <button id="connectAccountBtn" class="connect-btn" style="width: 100%; max-width: 240px; margin-bottom: 12px;">Connect Account</button>
+        
+        <div id="accountConnectedMsg" class="success-msg" style="display: none; max-width: 280px;">
+          <span>✅</span>
+          Account connected. You can now begin tracking
+        </div>
+        
+        <button id="getStartedBtn" class="get-started-btn" style="width: 100%; max-width: 240px; margin-bottom: 18px;">Get Started</button>
+        
         <div id="noSessionMsg" style="display: none; margin: 0 0 12px 0; padding: 8px 12px; border-radius: 10px; background: rgba(255, 0, 0, 0.08); color: #b91c1c; font-size: 0.85rem; text-align: center;">
           No session detected. Please visit <a href="https://chat.openai.com" target="_blank" style="color: #b91c1c; text-decoration: underline;">ChatGPT</a> to begin tracking.
         </div>
+        
         <a href="#" style="color: #64748b; font-size: 0.85rem; text-align: center; text-decoration: underline;">Learn how it works</a>
       </div>
     </div>
+    
     <div id="noSessionPage" style="display: none;">
       <div style="display: flex; align-items: center; margin-bottom: 16px; margin-top: 12px;">
         <img src="assets/offset_ai_logo.png" alt="OffsetAI Logo" style="width: 1.5em; height: 1.5em; border-radius: 50%; object-fit: cover; margin-right: 8px; vertical-align: middle;" />
@@ -36,29 +48,29 @@
         </div>
       </div>
     </div>
-    <div class="container" id="mainPage">
-      <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+    
+    <div class="container tracking-compact" id="mainPage">
+      <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
         <img src="assets/offset_ai_logo.png" alt="OffsetAI Logo" style="width: 1.5em; height: 1.5em; border-radius: 50%; object-fit: cover; margin-right: 8px; vertical-align: middle;" />
         <h2 class="headline" style="color: #1e293b; margin: 0; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; text-align: center; display: inline;">OffsetAI</h2>
       </div>
       
-      <div id="impactTitle" style="font-size: 14px; font-weight: 700; text-align: center; margin-bottom: 8px; margin-top: 8px; color: #1e293b;">Current Conversation Usage</div>
-      <div id="impactDisplay" class="impact-list">
+      <div id="impactTitle" style="font-size: 14px; font-weight: 700; text-align: center; margin-bottom: 6px; margin-top: 4px; color: #1e293b;">Current Conversation Usage</div>
+      <div id="impactDisplay" class="impact-list tracking-compact">
         <div class="loading">
           <span class="loading-spinner">⏳</span>
           Loading your impact...
         </div>
       </div>
-      <div id="noContentScriptMsg" style="display: none; margin: 0 0 12px 0; padding: 8px 12px; border-radius: 10px; background: rgba(255, 0, 0, 0.08); color: #b91c1c; font-size: 0.85rem; text-align: center;">
+      <div id="noContentScriptMsg" style="display: none; margin: 0 0 8px 0; padding: 6px 10px; border-radius: 8px; background: rgba(255, 0, 0, 0.08); color: #b91c1c; font-size: 0.8rem; text-align: center;">
         Please refresh your <a href="https://chat.openai.com" target="_blank" style="color: #b91c1c; text-decoration: underline;">ChatGPT</a> tab to enable tracking.
       </div>
       
-      <div class="button-group" style="display: flex; flex-direction: column; gap: 12px; margin: 0 auto; align-items: stretch;">
-        <button id="offsetBtn" class="offset-btn" style="width: 100%;">Offset My Impact</button>
+      <div class="button-group tracking-compact" style="display: flex; flex-direction: column; gap: 8px; margin: 8px auto 0 auto; align-items: stretch;">
         <button id="forceLogBtn" class="offset-btn" style="width: 100%; background: #334155; color: #BEEA8C;">Force Log Session</button>
       </div>
       
-      <footer class="footer-link">
+      <footer class="footer-link tracking-compact">
         <a href="https://github.com/goodideagpt/chatgpt-offset" target="_blank" aria-label="Open GitHub repository">
           About this extension
         </a>
