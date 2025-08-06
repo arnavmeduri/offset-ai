@@ -207,9 +207,10 @@ async function handleConnectAccount() {
     const extension_user_id = result.extension_user_id;
     if (!extension_user_id) {
       console.error("No extension_user_id found in storage.");
-      showToast("Unable to find your extension ID.");
+      showToast("Unable to find your extension ID. Please try reloading the extension.");
       return;
     }
+    
     try {
       // Send POST request to Bubble backend
       const response = await fetch('https://offset-ai.bubbleapps.io/version-test/api/1.1/wf/initiate_linking_process', {
@@ -219,46 +220,52 @@ async function handleConnectAccount() {
         },
         body: JSON.stringify({ extension_user_id }),
       });
+      
       if (!response.ok) {
         console.error('Failed to initiate linking:', response.statusText);
-        showToast("Failed to link account");
+        showToast("Failed to link account. Please try again.");
         return;
       }
-      // Show confirmation message
-      showAccountConnectedMessage();
-      // On success, open signup page
-      chrome.tabs.create({ url: 'https://dashboard.offsetai.app/version-test/sign-up?m=Signup' });
+      
+      // Get response to confirm backend received the ID
+      const responseData = await response.json();
+      if (responseData.success) {
+        // CRITICAL FIX: Pass extension ID to dashboard via URL parameter
+        const dashboardUrl = `https://dashboard.offsetai.app/version-test/sign-up?m=Signup&extension_id=${encodeURIComponent(extension_user_id)}`;
+        chrome.tabs.create({ url: dashboardUrl });
+        
+        // Mark linking as initiated
+        chrome.storage.local.set({ 
+          linkingInitiated: true, 
+          linkingTimestamp: Date.now() 
+        });
+        
+        showAccountConnectedMessage();
+        
+        // Start checking for successful linking
+        startLinkingVerification();
+      } else {
+        showToast("Backend failed to process linking request.");
+      }
     } catch (err) {
       console.error('Error sending extension_user_id to backend:', err);
-      showToast("Failed to link account");
+      showToast("Network error. Please check your connection and try again.");
     }
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  chrome.storage.local.get(['onboardingComplete', 'trackingStarted'], ({ onboardingComplete, trackingStarted }) => {
-    if (onboardingComplete && trackingStarted) {
-      // User has completed onboarding and started tracking, show tracking page
-      showMainPage();
-      updateDisplay();
-      
-      checkContentScriptRunning((isRunning) => {
-        const msgDiv = document.getElementById('noContentScriptMsg');
-        if (msgDiv) msgDiv.style.display = isRunning ? 'none' : 'block';
-      });
-    } else {
-      // Show welcome page
-      showWelcomePage();
+document.addEventListener('DOMContentLoaded', async () => {
+  // Use new onboarding state management
+  await updateOnboardingUI();
+  
+  // Set up periodic UI updates for welcome page
+  setInterval(async () => {
+    const state = await getOnboardingState();
+    if (state === OnboardingStates.WELCOME) {
       updateWelcomeSessionMsg();
       updateGetStartedButton();
-      
-      // Update welcome page elements periodically
-      setInterval(() => {
-        updateWelcomeSessionMsg();
-        updateGetStartedButton();
-      }, 1000);
     }
-  });
+  }, 1000);
 
   // Close button handler
   const closeBtn = document.getElementById('closeBtn');
@@ -357,3 +364,143 @@ document.addEventListener('visibilitychange', () => {
     }
   }
 });
+
+// Add account linking verification
+async function verifyAccountLinking() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['extension_user_id'], async (result) => {
+      const extension_user_id = result.extension_user_id;
+      if (!extension_user_id) {
+        resolve(false);
+        return;
+      }
+      
+      try {
+        const response = await fetch('https://offset-ai.bubbleapps.io/version-test/api/1.1/wf/check_linking_status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ extension_user_id }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.linked) {
+            chrome.storage.local.set({ 
+              accountLinked: true,
+              linkedAt: new Date().toISOString(),
+              userAccountId: data.user_account_id 
+            });
+            resolve(true);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Error verifying account linking:', err);
+      }
+      resolve(false);
+    });
+  });
+}
+
+function startLinkingVerification() {
+  const checkInterval = setInterval(async () => {
+    const isLinked = await verifyAccountLinking();
+    if (isLinked) {
+      clearInterval(checkInterval);
+      showToast('Account successfully linked!');
+      updateOnboardingUI();
+    }
+  }, 5000); // Check every 5 seconds
+  
+  // Stop checking after 5 minutes
+  setTimeout(() => {
+    clearInterval(checkInterval);
+  }, 5 * 60 * 1000);
+}
+
+// Enhanced onboarding state management
+const OnboardingStates = {
+  WELCOME: 'welcome',
+  LINKING_ACCOUNT: 'linking_account',
+  WAITING_FOR_SIGNUP: 'waiting_for_signup',
+  ACCOUNT_LINKED: 'account_linked',
+  TRACKING_ACTIVE: 'tracking_active'
+};
+
+async function getOnboardingState() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([
+      'onboardingComplete', 
+      'trackingStarted', 
+      'linkingInitiated', 
+      'accountLinked'
+    ], (result) => {
+      if (result.trackingStarted && result.accountLinked) {
+        resolve(OnboardingStates.TRACKING_ACTIVE);
+      } else if (result.accountLinked) {
+        resolve(OnboardingStates.ACCOUNT_LINKED);
+      } else if (result.linkingInitiated) {
+        resolve(OnboardingStates.WAITING_FOR_SIGNUP);
+      } else {
+        resolve(OnboardingStates.WELCOME);
+      }
+    });
+  });
+}
+
+async function updateOnboardingUI() {
+  const state = await getOnboardingState();
+  
+  switch (state) {
+    case OnboardingStates.WELCOME:
+      showWelcomePage();
+      break;
+      
+    case OnboardingStates.WAITING_FOR_SIGNUP:
+      showWaitingForSignupPage();
+      break;
+      
+    case OnboardingStates.ACCOUNT_LINKED:
+      showAccountLinkedPage();
+      break;
+      
+    case OnboardingStates.TRACKING_ACTIVE:
+      showMainPage();
+      updateDisplay();
+      break;
+  }
+}
+
+function showWaitingForSignupPage() {
+  document.getElementById('welcomePage').innerHTML = `
+    <div style="text-align: center; padding: 20px;">
+      <img src="assets/offset_ai_logo.png" alt="OffsetAI Logo" style="width: 54px; height: 54px; margin-bottom: 18px;" />
+      <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; color: #1e293b;">Complete Your Signup</h2>
+      <p style="font-size: 0.95rem; color: #334155; margin-bottom: 18px;">Please complete your account creation in the dashboard tab that opened.</p>
+      <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 18px;">⏳ Waiting for account creation...</div>
+      <button id="retryLinkingBtn" class="connect-btn" style="width: 100%; max-width: 240px;">Retry Linking</button>
+    </div>
+  `;
+  
+  document.getElementById('retryLinkingBtn').addEventListener('click', handleConnectAccount);
+}
+
+function showAccountLinkedPage() {
+  document.getElementById('welcomePage').innerHTML = `
+    <div style="text-align: center; padding: 20px;">
+      <img src="assets/offset_ai_logo.png" alt="OffsetAI Logo" style="width: 54px; height: 54px; margin-bottom: 18px;" />
+      <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; color: #1e293b;">Account Linked Successfully! ✅</h2>
+      <p style="font-size: 0.95rem; color: #334155; margin-bottom: 18px;">Your extension is now connected to your dashboard account.</p>
+      <button id="startTrackingBtn" class="get-started-btn" style="width: 100%; max-width: 240px;">Start Tracking</button>
+    </div>
+  `;
+  
+  document.getElementById('startTrackingBtn').addEventListener('click', () => {
+    chrome.storage.local.set({ trackingStarted: true }, () => {
+      showMainPage();
+      updateDisplay();
+    });
+  });
+}

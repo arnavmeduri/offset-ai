@@ -1,5 +1,8 @@
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   console.log("ChatGPT Offset Tracker installed!");
+  
+  // Ensure extension ID exists first
+  await ensureExtensionId();
   
   // When installed, inject content script into existing tabs.
   // This helps if the extension is reloaded while tabs are open.
@@ -15,18 +18,47 @@ chrome.runtime.onInstalled.addListener((details) => {
   // Initialize storage on first install
   if (details.reason === 'install') {
     chrome.storage.local.set({
-      onboardingComplete: false // Keep track of onboarding
+      onboardingComplete: false,
+      trackingStarted: false,
+      accountLinked: false,
+      linkingInitiated: false
     });
   }
-
-  // Generate and store extension_user_id if not present
-  chrome.storage.local.get(['extension_user_id'], (result) => {
-    if (!result.extension_user_id) {
-      const newId = crypto.randomUUID();
-      chrome.storage.local.set({ extension_user_id: newId });
-    }
-  });
 });
+
+// Improved ID generation with atomic operations
+async function ensureExtensionId() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['extension_user_id', 'id_generation_lock'], (result) => {
+      if (result.extension_user_id) {
+        resolve(result.extension_user_id);
+        return;
+      }
+      
+      // Check if another instance is generating ID
+      if (result.id_generation_lock && (Date.now() - result.id_generation_lock < 5000)) {
+        // Wait and retry
+        setTimeout(() => ensureExtensionId().then(resolve), 100);
+        return;
+      }
+      
+      // Set lock and generate ID
+      const lockTime = Date.now();
+      chrome.storage.local.set({ id_generation_lock: lockTime }, () => {
+        // Generate secure random ID
+        const newId = crypto.randomUUID();
+        chrome.storage.local.set({ 
+          extension_user_id: newId,
+          id_generation_lock: null,
+          id_created_at: new Date().toISOString()
+        }, () => {
+          console.log('Generated new extension ID:', newId);
+          resolve(newId);
+        });
+      });
+    });
+  });
+}
 
 // Helper to send session data to Bubble
 async function sendSessionToBubble(sessionData) {
