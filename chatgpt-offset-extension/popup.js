@@ -202,6 +202,9 @@ function showAccountConnectedMessage() {
   }
 }
 
+// COMMENTED OUT: handleConnectAccount function - functionality moved to tracking page
+// Original function triggered initiate_linking_process API workflow
+/*
 async function handleConnectAccount() {
   chrome.storage.local.get(['extension_user_id'], async (result) => {
     const extension_user_id = result.extension_user_id;
@@ -253,6 +256,7 @@ async function handleConnectAccount() {
     }
   });
 }
+*/
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Use new onboarding state management
@@ -273,11 +277,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     closeBtn.addEventListener('click', () => window.close());
   }
 
-  // Connect Account button handler
+  // COMMENTED OUT: Connect Account button handler - functionality moved to tracking page
+  // Original button triggered initiate_linking_process workflow
+  /*
   const connectAccountBtn = document.getElementById('connectAccountBtn');
   if (connectAccountBtn) {
     connectAccountBtn.addEventListener('click', handleConnectAccount);
   }
+  */
 
   // Get Started button handler
   const getStartedBtn = document.getElementById('getStartedBtn');
@@ -334,6 +341,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               browser_version
             };
             sendSessionToBubble(sessionData);
+            // Open signup page after logging session
+            chrome.tabs.create({ url: 'https://dashboard.offsetai.app/sign-up?m=Signup' });
           } else {
             showToast('No session data to log');
           }
