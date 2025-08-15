@@ -448,7 +448,7 @@ async function getOnboardingState() {
       'linkingInitiated', 
       'accountLinked'
     ], (result) => {
-      if (result.trackingStarted && result.accountLinked) {
+      if (result.trackingStarted) {
         resolve(OnboardingStates.TRACKING_ACTIVE);
       } else if (result.accountLinked) {
         resolve(OnboardingStates.ACCOUNT_LINKED);
