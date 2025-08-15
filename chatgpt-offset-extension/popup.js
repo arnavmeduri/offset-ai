@@ -309,8 +309,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Force Log button handler
   const forceLogBtn = document.getElementById('forceLogBtn');
   if (forceLogBtn) {
-    forceLogBtn.addEventListener('click', () => {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    forceLogBtn.addEventListener('click', async () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
         if (!tabs.length || !tabs[0].id) return;
         const tabId = tabs[0].id;
         const sessionIdKey = `session_id_${tabId}`;
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const emissionsKey = `estimated_emissions_${tabId}`;
         const waterKey = `estimated_water_${tabId}`;
         
-        chrome.storage.local.get([sessionIdKey, startTimeKey, promptKey, emissionsKey, waterKey, 'extension_user_id'], (result) => {
+        chrome.storage.local.get([sessionIdKey, startTimeKey, promptKey, emissionsKey, waterKey, 'extension_user_id'], async (result) => {
           const session_id = result[sessionIdKey];
           const start_time = result[startTimeKey];
           const prompt_count = result[promptKey] || 0;
@@ -340,9 +340,11 @@ document.addEventListener('DOMContentLoaded', async () => {
               estimated_water,
               browser_version
             };
-            sendSessionToBubble(sessionData);
-            // Open signup page after logging session
-            chrome.tabs.create({ url: 'https://dashboard.offsetai.app/sign-up?m=Signup' });
+            // Wait for the API call to complete before opening new tab
+            await sendSessionToBubble(sessionData);
+            // Open signup page after logging session with extension user ID
+            const signupUrl = `https://dashboard.offsetai.app/version-test/sign-up?m=Signup&extension_user_id=${encodeURIComponent(extension_user_id)}`;
+            chrome.tabs.create({ url: signupUrl });
           } else {
             showToast('No session data to log');
           }
